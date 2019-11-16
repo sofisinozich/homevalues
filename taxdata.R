@@ -6,7 +6,7 @@ library(magrittr)
 
 
 # Pulling in the data -----------------------------------------------------
-# library(RSocrata)
+library(RSocrata)
 # proptax2018<- read.socrata(
 #   "https://data.montgomerycountymd.gov/resource/26vm-snmd.csv",
 #   app_token = Sys.getenv("socrata727token"),
@@ -21,7 +21,7 @@ propertytax <- proptax2018
 
 library(stringr)
 
-# Adding latlong where available
+# Adding latlong where available and remove those that are not principal residences
 propertytax %<>% filter(residence == "PRINCIPAL RESIDENCE") %>% 
   separate(location_1,sep="\n\\(",into=c("add","latlong"), remove=FALSE) %>% 
   separate(latlong,sep=",",into=c("addlat","addlong")) %>% 
@@ -30,12 +30,14 @@ propertytax %<>% filter(residence == "PRINCIPAL RESIDENCE") %>%
 # Note that not all of them will have latlong... so let's fix that
 
 # Adding latlong ----------------------------------------------------------
+library(ggmap)
 # Add latlong from Google Maps API - don't run this again! Just pull from the RDS
 # missinggeo <- propertytax %>%
 #   filter(is.na(addlong),is.na(addlat)) %>%
 #   select(PARCEL_CODE,add) %>%
 #   mutate(add=gsub("\\n"," ",add))
 # missinggeo %<>% mutate_geocode(add)
+# Note that the crs is most likely 4326.
 #### This might be introducing some error, honestly... some of these seem a lil' sus. But we'll see.
 
 # saveRDS(missinggeo,"geocoded_missings.rds")
@@ -60,3 +62,32 @@ stillmissing<-read_csv("data/manual_fill_missing.csv")
 propertytax %>% coalesce_join(missinggeo,by="parcel_code") %>% coalesce_join(stillmissing,by="parcel_code") %>% 
   filter(is.na(addlat))
 # 🙌 finally, everyone has a latlong location.
+propertytax %<>% coalesce_join(missinggeo,by="parcel_code") %>% coalesce_join(stillmissing,by="parcel_code")
+
+# Double-check that everyone is in Montgomery County
+# Note that the lat-longs derived from the original dataset seem to point to the 
+# street immediately adjacent rather than the building location, so things will be fuzzed a little
+# But I think we can reasonably assume that the crs is 4326
+
+# Two stages: check to see if latlong falls within polygons and then check whether zip is a valid MoCo zip
+# Going to be conservative given the fuzziness around the latlongs and projection etc.
+
+library(sf)
+library(tigris)
+mocoshape_sf <- county_subdivisions(cb=TRUE,state="MD",county="Montgomery",year=2017,class="sf")
+st_crs(mocoshape_sf)
+# Want to convert this to API call but currently (11/16) hitting 500 error... why?
+# mocozips <- read.socrata(
+#   "https://data.montgomerycountymd.gov/resource/mmib-2cgz.csv",
+#   app_token = Sys.getenv("socrata727token"),
+# )
+# So using downloaded version instead
+validzips <- read_csv("data/Zip_Codes__Map_Service_.csv") %>% select(ZIPCODE) %>% unique %>% pull
+
+propertytax %<>% st_as_sf(x =., coords = c("addlong", "addlat"),crs=4326) %>% st_transform(crs=4269) %>% 
+  mutate(inmoco = lengths(st_within(.,mocoshape_sf))) %>% 
+  filter(inmoco == 1 | (inmoco == 0 & zip_code %in% validzips)) # Keep anything where latlong is in MoCo OR ZIP is valid MoCo ZIP
+# Note that this will take a while.⤴️
+
+# Save into an RDS for convenience
+saveRDS(propertytax,"data/moco_real_property_tax_2018_cleaned.rds")
