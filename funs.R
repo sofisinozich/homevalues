@@ -23,3 +23,14 @@ coalesce_join <- function(x, y,
   
   dplyr::bind_cols(joined, coalesced)[cols]
 }
+
+
+# Convenience functions for counting the number of points in a tract + mutating, and calculating distance to closest point
+tractcount <- function(j,k) {
+  sapply(st_geometry(j), function(x) suppressMessages(st_within(k,x,sparse = FALSE)) %>% sum)
+}
+
+tractdist <- function(j,k) {
+  st_distance(st_geometry(j),k) %>% apply(.,1,min)
+}
+

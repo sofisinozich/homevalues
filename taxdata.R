@@ -9,7 +9,7 @@ library(magrittr)
 # library(RSocrata)
 # proptax2018<- read.socrata(
 #   "https://data.montgomerycountymd.gov/resource/26vm-snmd.csv",
-#   app_token = Sys.getenv("socrata727token"),
+#   app_token = Sys.getenv("socrata727token")
 # )
 # names(proptax2018) <- gsub(" ","_",names(proptax2018))
 # proptax2018 %<>% as_tibble
@@ -64,6 +64,8 @@ propertytax %<>% coalesce_join(missinggeo,by="parcel_code") %>% coalesce_join(st
 propertytax %>% filter(is.na(addlat))
 # 🙌 finally, everyone has a latlong location.
 
+
+# Checking county ---------------------------------------------------------
 # Double-check that everyone is in Montgomery County
 # Note that the lat-longs derived from the original dataset seem to point to the 
 # street immediately adjacent rather than the building location, so things will be fuzzed a little
@@ -82,4 +84,5 @@ propertytax %>% filter(is.na(NAME))
 propertytax %<>% filter(!is.na(NAME))
 
 # Save into an RDS for convenience
-saveRDS(propertytax,"data/moco_real_property_tax_2018_cleaned.rds")
+
+sveRDS(propertytax,"data/moco_real_property_tax_2018_cleaned.rds")
