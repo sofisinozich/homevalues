@@ -2,11 +2,13 @@
 library(stringr)
 library(tidyverse)
 library(pdftools)
+library(magrittr)
 
 
 
 # High school info - from MCPS schools at a glance PDF ------------------------
 saag_full <-pdf_text("https://www.montgomeryschoolsmd.org/departments/regulatoryaccountability/glance/currentyear/SAAG2018.pdf")
+# This is a large file so it might take a while.
 saag_hs <- saag_full[370:421]
 # Remove Thomas Edison since non-trad HS
 saag_hs <- saag_hs[-c(13,14)]
@@ -30,11 +32,11 @@ mcpshs$short_name[mcpshs$short_name=="James Hubert Blake"]<-"James Blake"
 # High school boundaries - neglecting clusters for now, but can come back
 library(sf)
 hsbounds <- st_read("https://data.montgomeryschoolsmd.org/api/geospatial/hkez-wyb9?method=export&format=GeoJSON")
-clusterbounds <- st_read("https://data.montgomeryschoolsmd.org/api/geospatial/3hy6-nzu3?method=export&format=GeoJSON")
+# clusterbounds <- st_read("https://data.montgomeryschoolsmd.org/api/geospatial/3hy6-nzu3?method=export&format=GeoJSON")
 
 library(fuzzyjoin)
 hsdata <- left_join(hsbounds,mcpshs,by="short_name",method="dl")
+hsdata %<>% st_transform(crs=4269)
 
-# Need to append assigned HS to each property or tract at least...
-
-# Leave other school info pending for now...
+# Cleanup crew 🗑
+remove(mcpshs)

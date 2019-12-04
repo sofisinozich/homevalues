@@ -1,9 +1,7 @@
 # Property tax mangling/munging/etc.
 source("funs.r")
-library(readr)
 library(tidyverse)
 library(magrittr)
-
 
 # Pulling in the data -----------------------------------------------------
 # library(RSocrata)
@@ -70,10 +68,6 @@ propertytax %>% filter(is.na(addlat))
 # Note that the lat-longs derived from the original dataset seem to point to the 
 # street immediately adjacent rather than the building location, so things will be fuzzed a little
 
-library(sf)
-library(tigris)
-mocotracts <- tracts(state="MD",county="Montgomery",year=2018,class="sf") # Will use tract-level analysis later!
-st_crs(mocotracts)
 # All research leads to Google Maps latlong being 4326, so rolling with that
 propertytax %<>% st_as_sf(x =., coords = c("addlong", "addlat"),crs=4326) %>% st_transform(crs=4269) %>% 
   st_join(.,mocotracts,join=st_within)
