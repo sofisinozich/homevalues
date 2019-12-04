@@ -33,4 +33,3 @@ tractcount <- function(j,k) {
 tractdist <- function(j,k) {
   st_distance(st_geometry(j),k) %>% apply(.,1,min)
 }
-
