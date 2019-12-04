@@ -1,0 +1,42 @@
+name,descname,desctext,source
+STATEFP,State,State,ACS
+COUNTYFP,County,County,ACS
+TRACTCE,Tract,Tract,ACS
+GEOID,,,ACS
+NAME,,,ACS
+NAMELSAD,,,ACS
+MTFCC,,,ACS
+FUNCSTAT,,,ACS
+ALAND,Land Area,Land area of tract,ACS
+AWATER,Water Area,Water area of tract,ACS
+INTPTLAT,,,ACS
+INTPTLON,,,ACS
+avg_num_providers,Average number of broadband providers,Average number of broadband internet providers across all the blocks in the tract. ,MD iMap
+avg_up,Average upload speed,Average internet upload speed (mbps) across all blocks in the tract.,MD iMap
+avg_down,Average download speed,Average internet download speed (mbps) across all blocks in the tract.,MD iMap
+marc_count,MARC station count,Number of MARC stations located in tract.,MD iMap
+marc_dist,Distance to MARC station,"Distance (in miles) to closest MARC station (if tract has a MARC station in it, distance is 0).",MD iMap
+metro_count,Metro station count,Number of WMATA Metro stations located in tract.,Open Data DC
+metro_dist,Distance to Metro station,"Distance (in miles) to closest WMATA Metro station (if tract has a MARC station in it, distance is 0.)",Open Data DC
+bus_count,Bus stop count,Number of WMATA and Ride On bus stops located in tract.,"dataMontgomery, Open Data DC"
+hospital_count,Hospital count,Number of hospitals located in tract.,dataMontgomery
+hospital_dist,Distance to hospital,"Distance (in miles) to closest hospital (if tract has a hospital in it, distance is 0.) Includes nearby hospitals outside of Montgomery County boundaries.",dataMontgomery
+police_count,Police station count,Number of police stations located in tract.,MD iMap
+police_dist,Distance to police station,"Distance (in miles) to closest police station (if tract has a police station in it, distance is 0.)",MD iMap
+fire_count,Fire station count,Number of fire stations located in tract.,MD iMap
+fire_dist,Distance to fire station,"Distance (in miles) to closest fire station (if tract has a fire station in it, distance is 0.)",MD iMap
+mva_count,MVA location count,Number of MVA locations located in tract.,MD iMap
+mva_dist,Distance to MVA location,"Distance (in miles) to closest MVA location (if tract has a MVA location in it, distance is 0.)",MD iMap
+veip_count,VEIP location count,Number of VEIP locations located in tract.,MD iMap
+veip_dist,Distance to VEIP location,"Distance (in miles) to closest VEIP location (if tract has a VEIP location in it, distance is 0.)",MD iMap
+facil_count,Community facility count,Number of community facilities located in tract.,dataMontgomery
+facil_dist,Distance to community facility,"Distance (in miles) to closest community facility (if tract has a community facility in it, distance is 0.)",dataMontgomery
+early_count,Early voting center count,Number of early voting centers located in tract.,dataMontgomery
+early_dist,Distance to early voting center,"Distance (in miles) to closest early voting center (if tract has a early voting center in it, distance is 0.)",dataMontgomery
+acshomevalue,Median home value (ACS),Median home value in the tract from 2017 5-year ACS,ACS
+population,Population,Tract population from 2017 5-year ACS,ACS
+assessment_mean,Average assessed home value,Average assessed home value (2018) for primary residences in the tract.,dataMontgomery
+assessment_median,Median assessed home value,Median assessed home value (2018) for primary residences in the tract.,dataMontgomery
+bill_total_mean,Average property tax bill,"Average property tax bill for primary residences in the tract, including any credits.",dataMontgomery
+bill_total_median,Median property tax bill,"Median property tax bill for primary residences in the tract, including any credits.",dataMontgomery
+geometry,,,
