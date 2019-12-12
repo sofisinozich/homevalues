@@ -146,6 +146,9 @@ pollingplaces %<>% st_as_sf(crs = 4326,coords = c("x_lat","y_lat")) %>% st_trans
 mocodata %<>% left_join(internet,by="TRACTCE")
 # Also easy, merge in the length of bikeways
 mocodata %<>% left_join(bikeways,by="TRACTCE")
+# Put in 0s for NAs and remove the units
+mocodata %<>% mutate(totaldistance = totaldistance %>% as.vector %>% as.numeric) %>% 
+  mutate(totaldistance = ifelse(is.na(totaldistance),0,totaldistance))
 
 # For others - we want distance to nearest if not in, and if in (dist = 0 for at least one),how many
 # MARC stations

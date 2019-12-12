@@ -5,6 +5,7 @@ library(tidyverse)
 library(magrittr)
 library(sf)
 library(tigris)
+library(scales)
 
 ################ DATA SETUP #################
 
@@ -22,7 +23,7 @@ source("data_services.r")
 source("data_acs.r")
 mocodata %<>% left_join(acsdata,by="GEOID")
 # There are two tracts that do not have home value information
-# ‼️ IMPUTATION?
+# Imputation farther down...
 
 # Property tax data ------------------------------------------------------------
 # source("data_taxes.r") ⬅️ please don't run this again - a lot of initial work with geocoding locations
@@ -48,12 +49,9 @@ mocodata %<>% st_intersection(hsdata) %>%
 
 # School subscore ---------------------------------------------------------
 # Subscore for schools - SAT scores + AP/IB percentage + UMD req + grad rate
-mocodata %<>% mutate(score_school = (satt/160 + apib + umdreq + gradrate)/4,
-                    score_school_quantile = cut(score_school,quantile(score_school),labels=FALSE,include.lowest = TRUE),
-                    score_school_esol = score_school/(1-esol/100),
-                    score_school_farms = score_school/(1-farms/100),
-                    score_school_esol_quantile= cut(score_school_esol,quantile(score_school_esol),labels=FALSE,include.lowest = TRUE),
-                    score_school_farms_quantile= cut(score_school_farms,quantile(score_school_farms),labels=FALSE,include.lowest = TRUE)
+mocodata %<>% mutate(score_school = ((satt/160 + apib + umdreq + gradrate)/4) %>% rescale(to=c(0,100)),
+                    score_school_esol = (score_school/(1-esol/100)) %>% rescale(to=c(0,100)),
+                    score_school_farms = (score_school/(1-farms/100)) %>% rescale(to=c(0,100))
                     ) 
 # ‼️ Need to consider weight to give ESOL/FARMS - particularly FARMS
 # High FARMS rates are really destroying high income areas...
@@ -66,23 +64,72 @@ mocodata %<>% mutate(score_school = (satt/160 + apib + umdreq + gradrate)/4,
 # A straight average of the types of crime. 
 # Will re-calculate this dynamically in the visualization depending on preferred weights.
 # ‼️ Think this will just have to be based on n-tiles unless I can think of something better
-mocodata %<>% mutate(score_crime = 
-                      rowMeans(select(.,othercrime,personcrime,propertycrime,societycrime) 
-                                           %>% st_drop_geometry,na.rm=TRUE) %>% 
+mocodata %<>% mutate(score_crime = 110 - 
+                       rowMeans(select(.,othercrime,personcrime,propertycrime,societycrime)
+                                           %>% st_drop_geometry,na.rm=TRUE) %>%
                        cut(.,quantile(.,probs=seq(0,1,0.1)),labels=FALSE,include.lowest = TRUE) * 10)
+# Subtraction term because higher crime is worse
 
+# There's one outlier that's messing this up so leave ^ that for now
+# mocodata %>% mutate(score_crime = 
+#                       rowMeans(select(.,othercrime,personcrime,propertycrime,societycrime) %>% 
+#                       st_drop_geometry,na.rm=TRUE) %>% scale %>% as.vector %>% rescale(to=c(0,100))) %>% select(ends_with("crime"))
 
 # Home value score --------------------------------------------------------
 # Does this really need a score? Might as well.
-mocodata %>% mutate(score_homevalue = cut(acshomevalue,quantile(acshomevalue,probs=seq(0,1,0.1)),labels=FALSE,include.lowest = TRUE) * 10)
-# ‼️ See note above re imputation on the two that don't have home value - won't work until that's resolved :|
+# mocodata %<>% 
+#   mutate(score_homevalue = cut(acshomevalue,quantile(acshomevalue,probs=seq(0,1,0.1),na.rm=TRUE),labels=FALSE,include.lowest = TRUE) * 10)
+# Alternatively, a straight scaling
+# Need to impute two values ‼️ ‼️ ‼️ ‼️ ‼️ 
+homevalue_imputation <- mocodata %>% lm(data =., acshomevalue ~ population + assessment_median) # Very basic
+predict(homevalue_imputation,mocodata %>% filter(is.na(acshomevalue)))
+mocodata %<>% mutate(score_homevalue = rescale(acshomevalue,to=c(0,100)))
 
 
-# Property taxes ----------------------------------------------------------
-# Hadn't thought about it this way but could just put it in like as a n-tile...
+# Services score ----------------------------------------------------------
+# Higher counts, internet, bikeways, etc. = good
+# Lower distance = good
+# But counts need to be standardized by population and/or area
 
-# Testing
-mocodata %>% transmute(score = rowMeans(select(.,score_school,score_crime)%>% st_drop_geometry)) %>% ggplot + geom_sf(aes(fill=score)
-                                                                                                                      + )
+# Transport subscore - public transit and bikeways
+# Scale station counts by population, bikeways/distances by land area (not water area)
+# Slightly less weight given to bikeways given their practicality
+mocodata %<>% mutate(score_services_transport = 
+                         (1.25*scale((marc_count+metro_count+bus_count)/population) + # Number of transit stops (scaled by pop)
+                         1.25*scale(ifelse(marc_dist > metro_dist,-metro_dist,-marc_dist)) + # Distance to nearest station (MARC or Metro)
+                         0.5*scale(totaldistance/ALAND)) %>% rescale(to=c(0,100)))
+# Hospital/fire/police subscore
+mocodata %<>% mutate(score_services_emergency = 
+                         (scale(hospital_count/population) + scale(police_count/population) + scale(fire_count/population) +
+                         scale(-hospital_dist) + scale(-police_dist) + scale(-fire_dist)) %>% rescale(to=c(0,100)))
+# Other facilities subscore
+# community faclities, MVA/VEIP, polling places
+mocodata %<>% mutate(score_services_facilities = 
+                         (scale(mva_count/population) + scale(veip_count/population) + scale(facil_count/population) + scale(early_count/population) + scale(poll_count/population) +
+                         scale(-mva_dist) + scale(-veip_dist) + scale(-facil_dist) + scale(-early_dist) + scale(-poll_dist)) %>% rescale(to=c(0,100)))
+# Internet subscore
+# Weighted such that better down speeds are most important - think this reflects use
+mocodata %<>% mutate(score_services_internet = 
+                         .5*scale(avg_num_providers) + 
+                         1*scale(avg_up) + 
+                         1.5*scale(avg_down) %>% rescale(to=c(0,100)))
 
+mocodata %<>% mutate(score_services = (score_services_transport + score_services_emergency + score_services_facilities + score_services_transport)/4)
+
+
+
+# Final score -------------------------------------------------------------
+mocodata %<>% mutate(valuescore = (score_services + score_school + score_crime + score_homevalue)/4)
+
+mocodata %>% ggplot(aes(x=valuescore,y=bill_total_median)) + geom_point() + 
+  geom_smooth(method ="lm", formula = y ~ x, color="red")
+
+mocodata %<>% mutate(valuerank = resid(lm(bill_total_median ~ valuescore,data=mocodata,na.action = na.exclude)) %>% rank(na.last="keep"))
+# Ranked list
+mocodata %>% ggplot + geom_sf(aes(fill=valuerank)) +
+  geom_sf_label(data = mocodata %>% top_n(wt=valuerank,-5), aes(label = valuerank), color="green") +
+  geom_sf_label(data = mocodata %>% top_n(wt=valuerank,5), aes(label = valuerank), color ="red")
+
+write_rds(mocodata,"data/mocodata_with_scores.rds")
+  
 
