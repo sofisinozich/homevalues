@@ -2,7 +2,7 @@
 library(tidyverse)
 library(sf)
 library(magrittr)
-mocodata <- read_rds("/Users/brightsideofthedark/Documents/727project/homevalues/mocodata_with_scores.rds")
+mocodata <- read_rds("mocodata_with_scores.rds")
 mocodata %<>% mutate(valueresid = resid(lm(bill_total_median ~ valuescore,data=mocodata,na.action = na.exclude)))
 
 source("data_acs.R")

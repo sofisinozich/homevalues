@@ -24,7 +24,7 @@ library(xtable)
 library(cowplot)
 library(sf)
 
-mocodata <- read_rds("/Users/brightsideofthedark/Documents/727project/homevalues/mocodata_with_scores.rds")
+mocodata <- read_rds("mocodata_with_scores.rds")
 ```
 
 # Motivation
