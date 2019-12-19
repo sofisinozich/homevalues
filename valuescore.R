@@ -77,8 +77,8 @@ mocodata %<>% mutate(score_crime = 110 -
 
 # Home value score --------------------------------------------------------
 # Does this really need a score? Might as well.
-# mocodata %<>% 
-#   mutate(score_homevalue = cut(acshomevalue,quantile(acshomevalue,probs=seq(0,1,0.1),na.rm=TRUE),labels=FALSE,include.lowest = TRUE) * 10)
+mocodata %<>%
+  mutate(score_homevalue = cut(acshomevalue,quantile(acshomevalue,probs=seq(0,1,0.1),na.rm=TRUE),labels=FALSE,include.lowest = TRUE) * 10)
 # Alternatively, a straight scaling
 # Need to impute two values ‼️ ‼️ ‼️ ‼️ ‼️ 
 homevalue_imputation <- mocodata %>% lm(data =., acshomevalue ~ population + assessment_median) # Very basic

@@ -13,11 +13,18 @@ mocodata %<>% left_join(medage,by="GEOID") %>%
   left_join(moving,by="GEOID") %>% 
   left_join(hhtype,by="GEOID")
 
+# Adding urbanicity data
+btsdata <- read_csv("https://www.bts.gov/sites/bts.dot.gov/files/nhts2017/latch_2017-b.csv") %>% 
+  select(geocode,urban_group) %>% mutate(geocode = geocode %>% as.character) %>% 
+  mutate(ruralness = urban_group) %>% select(-urban_group)
+
+mocodata %<>% left_join(btsdata,by = c("GEOID" = "geocode"))
+
 set.seed(393)
 mocotrain <- mocodata %>% sample_frac(size = .75)
 
 library(randomForest)
-mocotrain %<>% select(ends_with("_credit_mean"),valuescore,valueresid,medianage:nuclearfam) %>% st_drop_geometry %>% 
+mocotrain %<>% select(ends_with("_credit_mean"),valuescore,valueresid,medianage:ruralness) %>% st_drop_geometry %>% 
   filter(!is.na(valuescore))
 
 m1 <- randomForest(valueresid ~ . -valuescore, data = mocotrain, importance = TRUE)

@@ -5,3 +5,5 @@
 .Renviron
 muckingaround.R
 rsconnect/
+*_cache
+*_files
